@@ -1,0 +1,16 @@
+patterns = []
+project = [
+    "Cve",
+    "NVD",
+    "Nvd",
+    "Url",
+    "cve",
+    "django",
+    "reqwest",
+    "serde",
+    "tokio",
+]
+
+[paths]
+
+[skipped]
