@@ -1,0 +1,1 @@
+- NVD client : handle pagination

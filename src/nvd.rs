@@ -10,10 +10,8 @@ const NVD_BASE_URL: &str = "https://services.nvd.nist.gov/rest/json/cves/2.0";
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct NvdResponse {
-    #[allow(dead_code)]
-    start_index: usize,
-    #[allow(dead_code)]
     total_results: usize,
+    results_per_page: usize,
     vulnerabilities: Vec<NvdVulnerability>,
 }
 
@@ -226,6 +224,8 @@ pub(crate) struct NvdClient {
 
 impl NvdClient {
     pub(crate) fn new() -> Self {
+        let disclaimer = "Disclaimer: this product uses the NVD API but is not endorsed or certified by the NVD.";
+        println!("{disclaimer}");
         Self {
             client: reqwest::Client::new(),
         }
@@ -263,6 +263,10 @@ impl NvdClient {
 
         let response: NvdResponse =
             serde_json::from_str(&json).context("Could not parse json response")?;
+
+        if response.total_results > response.results_per_page {
+            panic!("You need to handle pagination")
+        }
 
         let vulnerabilities = response.vulnerabilities;
         let matching_vulnerabilities: Vec<_> = vulnerabilities
