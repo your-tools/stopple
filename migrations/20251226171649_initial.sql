@@ -1,0 +1,9 @@
+CREATE TABLE cve (
+    id VARCHAR(100) PRIMARY KEY NOT NULL,
+    raw_json STRING NOT NULL
+);
+
+CREATE TABLE meta (
+    name STRING PRIMARY KEY NOT NULL,
+    value STRING NOT NULL
+);

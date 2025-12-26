@@ -1,4 +1,5 @@
 patterns = [
+    "*.db",
     "*.json",
     "*.lock",
     "LICENSE",
@@ -18,13 +19,18 @@ project = [
     "nvd",
     "reqwest",
     "serde",
+    "sqlx",
     "subcommand",
     "termwidth",
+    "todo",
     "tokio",
 ]
 
 [paths]
-"src/cli.rs" = ["hms"]
+"src/cli.rs" = [
+    "Args",
+    "hms",
+]
 "src/nvd.rs" = [
     "Cpe",
     "Cvss",

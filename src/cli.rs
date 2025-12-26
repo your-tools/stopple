@@ -1,4 +1,4 @@
-use std::{cmp::min, path::PathBuf};
+use std::{cmp::min, path::PathBuf, time::Duration};
 
 use anyhow::{Context, Ok, Result};
 use chrono::prelude::*;
@@ -6,6 +6,7 @@ use clap::Parser;
 use versions::Versioning;
 
 use crate::{
+    database::{Cve, Database},
     dependencies::Dependency,
     finder::Upgrade,
     nvd::NvdClient,
@@ -15,7 +16,7 @@ use crate::{
 
 #[derive(Parser)]
 #[clap(version)]
-struct Arguments {
+struct Args {
     #[clap(subcommand)]
     command: Command,
 }
@@ -23,13 +24,15 @@ struct Arguments {
 #[derive(Parser)]
 enum Command {
     #[clap(about = "query vulnerabilities")]
-    Query(QueryArguments),
+    Query(QueryArgs),
     #[clap(about = "scan project")]
-    Scan(ScanArguments),
+    Scan(ScanArgs),
+    #[clap(about = "manage stopple database")]
+    Database(DatabaseArgs),
 }
 
 #[derive(Parser)]
-struct QueryArguments {
+struct QueryArgs {
     package: String,
     #[clap(long)]
     long: bool,
@@ -40,22 +43,39 @@ struct QueryArguments {
 }
 
 #[derive(Parser)]
-struct ScanArguments {
+struct ScanArgs {
     #[clap(long)]
     lock_path: PathBuf,
 }
 
+#[derive(Parser)]
+struct DatabaseArgs {
+    #[clap(long)]
+    path: PathBuf,
+    #[clap(subcommand)]
+    command: DatabaseCommand,
+}
+
+#[derive(Parser)]
+enum DatabaseCommand {
+    #[clap(about = "create a new database")]
+    Create,
+    #[clap(about = "refresh the database")]
+    Refresh,
+}
+
 pub async fn run() -> Result<()> {
-    let args = Arguments::parse();
+    let args = Args::parse();
     match args.command {
         Command::Query(args) => run_query(args).await?,
         Command::Scan(args) => run_scan(args).await?,
+        Command::Database(args) => run_database(args).await?,
     }
     Ok(())
 }
 
-async fn run_query(args: QueryArguments) -> Result<()> {
-    let QueryArguments {
+async fn run_query(args: QueryArgs) -> Result<()> {
+    let QueryArgs {
         package,
         long,
         severity: min_severity,
@@ -82,8 +102,8 @@ async fn run_query(args: QueryArguments) -> Result<()> {
     Ok(())
 }
 
-async fn run_scan(args: ScanArguments) -> Result<()> {
-    let ScanArguments { lock_path } = args;
+async fn run_scan(args: ScanArgs) -> Result<()> {
+    let ScanArgs { lock_path } = args;
     let lock_name = lock_path
         .file_name()
         .context("lock path must have a file name")?;
@@ -163,4 +183,53 @@ fn print_vulnerabilities(vulnerabilities: Vec<Vulnerability>, long: bool) {
 
         println!();
     }
+}
+
+async fn run_database(args: DatabaseArgs) -> Result<()> {
+    let DatabaseArgs { path, command } = args;
+    match command {
+        DatabaseCommand::Create => create_database(path).await,
+        DatabaseCommand::Refresh => refresh_database(path).await,
+    }
+}
+
+async fn create_database(path: PathBuf) -> Result<()> {
+    if !path.exists() {
+        tokio::fs::write(&path, "").await?;
+    }
+    let database = Database::open_from_path(&path).await?;
+
+    database.migrate().await?;
+    Ok(())
+}
+
+async fn refresh_database(path: PathBuf) -> Result<()> {
+    let database = Database::open_from_path(&path).await?;
+
+    let last_mode_date = database.last_mod_date().await?;
+    let mut client = NvdClient::new();
+
+    let paginated_cves = client.get_cves(last_mode_date, None).await?;
+    save_cves(&database, paginated_cves.data()).await?;
+
+    let mut start_index = 0;
+    while start_index < paginated_cves.total_results() {
+        start_index += paginated_cves.results_per_page();
+        let paginated_cves = client.get_cves(last_mode_date, Some(start_index)).await?;
+        save_cves(&database, paginated_cves.data()).await?;
+        tokio::time::sleep(Duration::from_secs(10)).await;
+    }
+
+    database.save_last_mod_date().await?;
+
+    let count = database.cve_count().await?;
+
+    println!("Database contains {count} CVEs");
+    Ok(())
+}
+
+async fn save_cves(database: &Database, cves: &[Cve]) -> Result<()> {
+    database.save_cves(cves).await?;
+    println!("Stored {} new CVEs in the database", cves.len());
+    Ok(())
 }

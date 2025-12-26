@@ -1,4 +1,5 @@
 pub mod cli;
+pub mod database;
 pub mod dependencies;
 pub mod finder;
 pub mod nvd;
