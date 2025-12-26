@@ -1,16 +1,31 @@
-patterns = []
+patterns = [
+    "*.json",
+    "*.lock",
+    "LICENSE",
+]
 project = [
+    "CVE",
     "Cve",
     "NVD",
     "Nvd",
     "Url",
     "cve",
+    "cves",
     "django",
+    "nvd",
     "reqwest",
     "serde",
+    "subcommand",
+    "termwidth",
     "tokio",
 ]
 
 [paths]
+"src/nvd.rs" = [
+    "Cpe",
+    "Cvss",
+    "cpe",
+    "cvss",
+]
 
 [skipped]
