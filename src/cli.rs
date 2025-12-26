@@ -1,6 +1,7 @@
 use std::{cmp::min, path::PathBuf};
 
 use anyhow::{Context, Ok, Result};
+use chrono::prelude::*;
 use clap::Parser;
 use versions::Versioning;
 
@@ -34,6 +35,8 @@ struct QueryArguments {
     long: bool,
     #[clap(long)]
     severity: Option<Severity>,
+    #[clap(long)]
+    start_date: Option<String>,
 }
 
 #[derive(Parser)]
@@ -56,9 +59,17 @@ async fn run_query(args: QueryArguments) -> Result<()> {
         package,
         long,
         severity: min_severity,
+        start_date,
     } = args;
 
     let mut nvd_client = NvdClient::new();
+
+    if let Some(s) = start_date {
+        let start_date =
+            NaiveDate::parse_from_str(&s, "%Y-%m-%d").context("could not parse start date")?;
+        let time = NaiveTime::from_hms_opt(0, 0, 0).expect("midnight is a valid time");
+        nvd_client.set_start_date(start_date.and_time(time).and_utc());
+    }
 
     let mut vulnerabilities = nvd_client.get_vulnerabilities(&package).await?;
 

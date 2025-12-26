@@ -1,4 +1,5 @@
 use anyhow::{Context, Result, anyhow, bail};
+use chrono::prelude::*;
 use reqwest::StatusCode;
 use serde::Deserialize;
 use versions::Versioning;
@@ -220,6 +221,7 @@ impl CpeMatch {
 
 pub(crate) struct NvdClient {
     client: reqwest::Client,
+    start_date: Option<DateTime<Utc>>,
 }
 
 impl NvdClient {
@@ -228,14 +230,33 @@ impl NvdClient {
         println!("{disclaimer}");
         Self {
             client: reqwest::Client::new(),
+            start_date: None,
         }
     }
 
+    pub(crate) fn set_start_date(&mut self, date: DateTime<Utc>) {
+        self.start_date = Some(date);
+    }
+
     async fn find_vulnerabilities(&mut self, package: &str) -> Result<Vec<NvdVulnerability>> {
+        const DATE_FORMAT: &str = "%Y-%m-%dT00:00:00.000";
+
         let api_key =
             std::env::var("NVD_API_KEY").context("NVD_API_KEY not found in environment")?;
 
-        let query_params = vec![("keywordSearch", package)];
+        let mut query_params = vec![("keywordSearch", package.to_owned())];
+
+        if let Some(s) = self.start_date {
+            let start_date = format!("{}", s.format(DATE_FORMAT));
+            query_params.push(("lastModStartDate", start_date));
+
+            let end_date = Utc::now();
+            let end_date = format!("{}", end_date.format(DATE_FORMAT));
+
+            query_params.push(("lastModEndDate", end_date));
+        }
+
+        dbg!(&query_params);
 
         let response = self
             .client
@@ -244,15 +265,20 @@ impl NvdClient {
             .header("apiKey", api_key)
             .send()
             .await?;
-        let status_code = &response.status();
-        let json = response.text().await?;
+        let status_code = response.status();
+        let headers = response.headers().clone();
+        let body = response.text().await?;
 
-        if *status_code != StatusCode::OK {
-            bail!("Request failed wit status {status_code}\n{json}")
+        if status_code != StatusCode::OK {
+            let message = headers
+                .get("message")
+                .map(|v| format!("{v:?}"))
+                .unwrap_or("<no message header>".to_owned());
+            bail!("Request failed wit status {status_code}\nmessage: {message}\n{body}")
         }
 
         let response: NvdResponse =
-            serde_json::from_str(&json).context("Could not parse json response")?;
+            serde_json::from_str(&body).context("Could not parse response body")?;
 
         if response.total_results > response.results_per_page {
             panic!("You need to handle pagination")
