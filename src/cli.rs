@@ -1,11 +1,15 @@
-use std::cmp::min;
+use std::{cmp::min, path::PathBuf};
 
-use anyhow::{Ok, Result};
+use anyhow::{Context, Ok, Result};
 use clap::Parser;
+use versions::Versioning;
 
 use crate::{
+    dependencies::Dependency,
+    finder::Upgrade,
     nvd::NvdClient,
-    vulnerabilities::{Range, Severity, Vulnerability},
+    project::Project,
+    vulnerabilities::{Range, Severity, Vulnerability, VulnerabilityRepository},
 };
 
 #[derive(Parser)]
@@ -19,46 +23,88 @@ struct Arguments {
 enum Command {
     #[clap(about = "query vulnerabilities")]
     Query(QueryArguments),
+    #[clap(about = "scan project")]
+    Scan(ScanArguments),
 }
 
 #[derive(Parser)]
 struct QueryArguments {
-    search_terms: String,
-    #[clap(long)]
-    num_results: Option<usize>,
+    package: String,
     #[clap(long)]
     long: bool,
     #[clap(long)]
     severity: Option<Severity>,
 }
 
+#[derive(Parser)]
+struct ScanArguments {
+    #[clap(long)]
+    lock_path: PathBuf,
+}
+
 pub async fn run() -> Result<()> {
     let args = Arguments::parse();
     match args.command {
         Command::Query(args) => run_query(args).await?,
+        Command::Scan(args) => run_scan(args).await?,
     }
     Ok(())
 }
 
 async fn run_query(args: QueryArguments) -> Result<()> {
     let QueryArguments {
-        search_terms,
-        num_results,
+        package,
         long,
         severity: min_severity,
     } = args;
 
     let mut nvd_client = NvdClient::new();
 
-    let mut vulnerabilities = nvd_client
-        .get_vulnerabilities(&search_terms, num_results)
-        .await?;
+    let mut vulnerabilities = nvd_client.get_vulnerabilities(&package).await?;
 
     if let Some(min_severity) = min_severity {
         filter(&mut vulnerabilities, min_severity);
     }
 
     print_vulnerabilities(vulnerabilities, long);
+
+    Ok(())
+}
+
+async fn run_scan(args: ScanArguments) -> Result<()> {
+    let ScanArguments { lock_path } = args;
+    let lock_name = lock_path
+        .file_name()
+        .context("lock path must have a file name")?;
+    let lock_name = lock_name.to_string_lossy();
+    let lock_contents = tokio::fs::read_to_string(&lock_path).await?;
+
+    let packages = lockdiff::parse_lock(&lock_name, &lock_contents)?;
+
+    let dependencies: Vec<_> = packages
+        .into_iter()
+        .map(|p| {
+            let name = p.name().to_owned();
+            let version = Versioning::new(p.version()).expect("version in locks should be valid");
+            Dependency { name, version }
+        })
+        .collect();
+
+    let client = NvdClient::new();
+    let mut project = Project::new(client);
+    project.set_dependencies(dependencies);
+    project.scan().await?;
+
+    let upgrades = project.upgrades();
+
+    for Upgrade {
+        package,
+        from_version,
+        to_version,
+    } in upgrades
+    {
+        println!("{package}: {from_version} -> {to_version}")
+    }
 
     Ok(())
 }

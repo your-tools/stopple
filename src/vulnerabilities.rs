@@ -1,3 +1,4 @@
+use anyhow::Result;
 use std::{error::Error, fmt::Display, str::FromStr};
 
 use versions::Versioning;
@@ -10,6 +11,7 @@ pub enum Severity {
     Critical,
 }
 
+#[derive(Clone)]
 pub struct Range {
     pub(crate) start: Versioning,
     pub(crate) end: Versioning,
@@ -64,10 +66,14 @@ impl FromStr for Severity {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Vulnerability {
     pub(crate) id: String,
     pub(crate) description: String,
     pub(crate) severity: Option<Severity>,
     pub(crate) ranges: Vec<Range>,
+}
+
+pub(crate) trait VulnerabilityRepository {
+    async fn get_vulnerabilities(&mut self, package: &str) -> Result<Vec<Vulnerability>>;
 }

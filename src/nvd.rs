@@ -3,7 +3,7 @@ use reqwest::StatusCode;
 use serde::Deserialize;
 use versions::Versioning;
 
-use crate::vulnerabilities::{Range, Severity, Vulnerability};
+use crate::vulnerabilities::{Range, Severity, Vulnerability, VulnerabilityRepository};
 
 const NVD_BASE_URL: &str = "https://services.nvd.nist.gov/rest/json/cves/2.0";
 
@@ -231,19 +231,11 @@ impl NvdClient {
         }
     }
 
-    async fn find_vulnerabilities(
-        &mut self,
-        query: &str,
-        num_results: Option<usize>,
-    ) -> Result<Vec<NvdVulnerability>> {
+    async fn find_vulnerabilities(&mut self, package: &str) -> Result<Vec<NvdVulnerability>> {
         let api_key =
             std::env::var("NVD_API_KEY").context("NVD_API_KEY not found in environment")?;
 
-        let mut query_params = vec![("keywordSearch", query.to_string())];
-
-        if let Some(d) = num_results {
-            query_params.push(("resultsPerPage", d.to_string()));
-        }
+        let query_params = vec![("keywordSearch", package)];
 
         let response = self
             .client
@@ -259,8 +251,6 @@ impl NvdClient {
             bail!("Request failed wit status {status_code}\n{json}")
         }
 
-        let _ = std::fs::write("nvd.json", &json);
-
         let response: NvdResponse =
             serde_json::from_str(&json).context("Could not parse json response")?;
 
@@ -271,17 +261,15 @@ impl NvdClient {
         let vulnerabilities = response.vulnerabilities;
         let matching_vulnerabilities: Vec<_> = vulnerabilities
             .into_iter()
-            .filter(|v| v.matches(query))
+            .filter(|v| v.matches(package))
             .collect();
         Ok(matching_vulnerabilities)
     }
+}
 
-    pub(crate) async fn get_vulnerabilities(
-        &mut self,
-        package: &str,
-        num_results: Option<usize>,
-    ) -> Result<Vec<Vulnerability>> {
-        let cves = self.find_vulnerabilities(package, num_results).await?;
+impl VulnerabilityRepository for NvdClient {
+    async fn get_vulnerabilities(&mut self, package: &str) -> Result<Vec<Vulnerability>> {
+        let cves = self.find_vulnerabilities(package).await?;
         let vulnerabilities: Vec<Result<Vulnerability>> =
             cves.iter().map(|cve| cve.to_domain()).collect();
 
