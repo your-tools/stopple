@@ -227,11 +227,6 @@ impl CpeMatch {
     }
 }
 
-pub(crate) struct NvdClient {
-    client: reqwest::Client,
-    start_date: Option<DateTime<Utc>>,
-}
-
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct Pagination {
     total_results: usize,
@@ -257,18 +252,22 @@ impl<T> PaginatedData<T> {
     }
 }
 
+pub(crate) struct PaginatedBody {
+    pagination: Pagination,
+    body: String,
+}
+
+pub(crate) struct NvdClient {
+    client: reqwest::Client,
+}
+
 impl NvdClient {
     pub(crate) fn new() -> Self {
         let disclaimer = "Disclaimer: this product uses the NVD API but is not endorsed or certified by the NVD.";
         println!("{disclaimer}");
         Self {
             client: reqwest::Client::new(),
-            start_date: None,
         }
-    }
-
-    pub(crate) fn set_start_date(&mut self, date: DateTime<Utc>) {
-        self.start_date = Some(date);
     }
 
     async fn make_query(
@@ -276,7 +275,7 @@ impl NvdClient {
         start_date: Option<DateTime<Utc>>,
         package: Option<&str>,
         start_index: Option<usize>,
-    ) -> Result<String> {
+    ) -> Result<PaginatedBody> {
         let api_key =
             std::env::var("NVD_API_KEY").context("NVD_API_KEY not found in environment")?;
 
@@ -324,7 +323,27 @@ impl NvdClient {
         // NOTE: uncomment me if JSON parsing fails
         // tokio::fs::write("nvd.json", &body).await?;
 
-        Ok(body)
+        let response: serde_json::Value = serde_json::from_str(&body)?;
+
+        let results_per_page = response
+            .get("resultsPerPage")
+            .context("missing key: 'resultsPerPage'")?;
+        let results_per_page = results_per_page
+            .as_i64()
+            .context("'resultsPerPage' should be an int")? as usize;
+
+        let total_results = response
+            .get("totalResults")
+            .context("missing key: 'totalResults'")?;
+        let total_results = total_results
+            .as_i64()
+            .context("'totalResults' should be an int")? as usize;
+
+        let pagination = Pagination {
+            total_results,
+            results_per_page,
+        };
+        Ok(PaginatedBody { pagination, body })
     }
 
     pub(crate) async fn get_cves(
@@ -332,29 +351,11 @@ impl NvdClient {
         start_date: Option<DateTime<Utc>>,
         start_index: Option<usize>,
     ) -> Result<PaginatedData<Cve>> {
-        let body = self.make_query(start_date, None, start_index).await?;
+        let PaginatedBody { pagination, body } =
+            self.make_query(start_date, None, start_index).await?;
 
         let response: serde_json::Value =
             serde_json::from_str(&body).context("Could not parse response body")?;
-
-        let results_per_page = response
-            .get("resultsPerPage")
-            .context("missing key: 'resultsPerPage'")?;
-        let results_per_page = results_per_page
-            .as_i64()
-            .context("'resultsPerPage' should be an int")?;
-
-        let total_results = response
-            .get("totalResults")
-            .context("missing key: 'totalResults'")?;
-        let total_results = total_results
-            .as_i64()
-            .context("'totalResults' should be an int")?;
-
-        let pagination = Pagination {
-            total_results: total_results as usize,
-            results_per_page: results_per_page as usize,
-        };
 
         let mut data = vec![];
         let vulnerabilities = response
@@ -382,32 +383,53 @@ impl NvdClient {
         Ok(PaginatedData { pagination, data })
     }
 
-    async fn find_vulnerabilities(&mut self, package: &str) -> Result<Vec<NvdVulnerability>> {
-        let body = self
-            .make_query(self.start_date, Some(package), None)
-            .await?;
+    async fn find_vulnerabilities(
+        &mut self,
+        package: &str,
+        start_index: Option<usize>,
+    ) -> Result<PaginatedData<NvdVulnerability>> {
+        let respone = self.make_query(None, Some(package), start_index).await?;
+
+        let PaginatedBody { pagination, body } = respone;
 
         let response: NvdResponse =
             serde_json::from_str(&body).context("Could not parse response body")?;
-
-        if response.total_results > response.results_per_page {
-            panic!("You need to handle pagination")
-        }
 
         let vulnerabilities = response.vulnerabilities;
         let matching_vulnerabilities: Vec<_> = vulnerabilities
             .into_iter()
             .filter(|v| v.matches(package))
             .collect();
-        Ok(matching_vulnerabilities)
+        Ok(PaginatedData {
+            pagination,
+            data: matching_vulnerabilities,
+        })
     }
 }
 
 impl VulnerabilityRepository for NvdClient {
     async fn get_vulnerabilities(&mut self, package: &str) -> Result<Vec<Vulnerability>> {
-        let cves = self.find_vulnerabilities(package).await?;
+        let mut all_cves = vec![];
+
+        let mut paginated_cves = self.find_vulnerabilities(package, None).await?;
+        all_cves.append(&mut paginated_cves.data);
+
+        if paginated_cves.results_per_page() < paginated_cves.total_results() {
+            let mut start_index = 0;
+
+            while start_index <= paginated_cves.total_results() {
+                start_index += paginated_cves.results_per_page();
+                let mut paginated_cves = self
+                    .find_vulnerabilities(package, Some(start_index))
+                    .await?;
+                all_cves.append(&mut paginated_cves.data);
+            }
+        }
+
+        let count = all_cves.len();
+
         let vulnerabilities: Vec<Result<Vulnerability>> =
-            cves.iter().map(|cve| cve.to_domain()).collect();
+            all_cves.iter().map(|cve| cve.to_domain()).collect();
 
         let mut error = String::new();
         let mut res = vec![];
@@ -424,6 +446,7 @@ impl VulnerabilityRepository for NvdClient {
         if !error.is_empty() {
             bail!(error);
         }
+        let count = res.len();
 
         Ok(res)
     }

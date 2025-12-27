@@ -1,1 +1,1 @@
-- NVD client : handle pagination
+- Properly test pagination, makbe via a mock request
