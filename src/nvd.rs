@@ -15,8 +15,6 @@ const DATE_FORMAT: &str = "%Y-%m-%dT00:00:00.000";
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 struct NvdResponse {
-    total_results: usize,
-    results_per_page: usize,
     vulnerabilities: Vec<NvdVulnerability>,
 }
 
@@ -360,7 +358,7 @@ impl NvdClient {
         let mut data = vec![];
         let vulnerabilities = response
             .get("vulnerabilities")
-            .context("missing key: 'vulnerabilitities'")?;
+            .context("missing key: 'vulnerabilities'")?;
         for vulnerability in vulnerabilities
             .as_array()
             .context("missing key: 'vulnerabilities'")?
@@ -388,9 +386,9 @@ impl NvdClient {
         package: &str,
         start_index: Option<usize>,
     ) -> Result<PaginatedData<NvdVulnerability>> {
-        let respone = self.make_query(None, Some(package), start_index).await?;
+        let response = self.make_query(None, Some(package), start_index).await?;
 
-        let PaginatedBody { pagination, body } = respone;
+        let PaginatedBody { pagination, body } = response;
 
         let response: NvdResponse =
             serde_json::from_str(&body).context("Could not parse response body")?;
@@ -426,8 +424,6 @@ impl VulnerabilityRepository for NvdClient {
             }
         }
 
-        let count = all_cves.len();
-
         let vulnerabilities: Vec<Result<Vulnerability>> =
             all_cves.iter().map(|cve| cve.to_domain()).collect();
 
@@ -446,7 +442,6 @@ impl VulnerabilityRepository for NvdClient {
         if !error.is_empty() {
             bail!(error);
         }
-        let count = res.len();
 
         Ok(res)
     }

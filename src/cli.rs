@@ -119,8 +119,10 @@ async fn run_scan(args: ScanArgs) -> Result<()> {
         })
         .collect();
 
-    let client = NvdClient::new();
-    let mut project = Project::new(client);
+    let url = std::env::var("DATABASE_URL")?;
+    let database = Database::open(&url).await?;
+
+    let mut project = Project::new(database);
     project.set_dependencies(dependencies);
     project.scan().await?;
 

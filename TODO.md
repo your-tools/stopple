@@ -1,1 +1,1 @@
-- Properly test pagination, makbe via a mock request
+- Properly test pagination, maybe via a mock request

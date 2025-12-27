@@ -30,7 +30,7 @@ pub fn find_upgrade(dependency: &Dependency, vulnerabilities: &[Vulnerability]) 
     let mut found_match = false;
     for Vulnerability { ranges, .. } in vulnerabilities {
         for Range { start, end } in ranges {
-            if start <= &dependency.version && &dependency.version <= end {
+            if start <= &dependency.version && &dependency.version < end {
                 found_match = true;
                 first_non_vulnerable_version = max(end.clone(), first_non_vulnerable_version);
             }

@@ -1,4 +1,5 @@
 use futures_util::TryStreamExt;
+use std::io::Write;
 use std::path::Path;
 
 use anyhow::{Context, Ok, Result};
@@ -8,7 +9,7 @@ use sqlx::migrate::Migrator;
 use sqlx::{Row, SqlitePool, sqlite::SqlitePoolOptions};
 
 use crate::nvd::CveVulnerability;
-use crate::vulnerabilities::Vulnerability;
+use crate::vulnerabilities::{Vulnerability, VulnerabilityRepository};
 
 static MIGRATOR: Migrator = sqlx::migrate!();
 
@@ -83,8 +84,10 @@ impl Database {
         if self.in_cache(package).await? {
             self.get_from_cache(package).await
         } else {
+            println!("Starting full search for {package} ...");
             let vulnerabilities = self.full_search(package).await?;
             self.save_cache(package, &vulnerabilities).await?;
+            println!("Results for {package} stored in cache");
             Ok(vulnerabilities)
         }
     }
@@ -94,12 +97,29 @@ impl Database {
 
         let query = sqlx::query!(
             "
+            SELECT COUNT(id) AS count FROM cve
+            "
+        );
+        let row = query.fetch_one(&self.pool).await?;
+        let total = row.count;
+        let mut index = 0;
+        let mut current_percentage;
+        let mut last_percentage = 0;
+        let query = sqlx::query!(
+            "
             SELECT id, raw_json FROM cve
             "
         );
         let mut rows = query.fetch(&self.pool);
 
         while let Some(row) = rows.try_next().await? {
+            index += 1;
+            current_percentage = (index * 100) / total;
+            if current_percentage != last_percentage {
+                print!("{current_percentage:02} %\r");
+                let _ = std::io::stdout().flush();
+                last_percentage = current_percentage;
+            }
             let cve: CveVulnerability = serde_json::from_str(&row.raw_json)?;
             if cve.matches(package) {
                 let vulnerability = cve.to_domain()?;
@@ -225,6 +245,12 @@ impl Database {
             .expect("saved values should have the correct format");
 
         Ok(Some(date.to_utc()))
+    }
+}
+
+impl VulnerabilityRepository for Database {
+    async fn get_vulnerabilities(&mut self, package: &str) -> Result<Vec<Vulnerability>> {
+        self.search(package).await
     }
 }
 

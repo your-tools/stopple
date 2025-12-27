@@ -24,6 +24,7 @@ project = [
     "termwidth",
     "todo",
     "tokio",
+    "util",
 ]
 
 [paths]
