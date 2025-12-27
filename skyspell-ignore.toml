@@ -28,6 +28,10 @@ project = [
 ]
 
 [paths]
+"pyproject.toml" = [
+    "ipdb",
+    "ipython",
+]
 "src/cli.rs" = [
     "Args",
     "hms",

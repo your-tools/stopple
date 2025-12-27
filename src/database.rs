@@ -1,5 +1,3 @@
-use futures_util::TryStreamExt;
-use std::io::Write;
 use std::path::Path;
 
 use anyhow::{Context, Ok, Result};
@@ -40,21 +38,6 @@ impl Database {
         Ok(())
     }
 
-    async fn save_cve(&self, id: &str, json: &str) -> Result<()> {
-        let query = sqlx::query!(
-            "
-            INSERT INTO cve (id, raw_json) VALUES (?, ?)
-            ON CONFLICT(id) DO UPDATE SET raw_json=excluded.raw_json
-            ",
-            id,
-            json
-        );
-
-        query.execute(&self.pool).await?;
-
-        Ok(())
-    }
-
     pub(crate) async fn cve_count(&self) -> Result<usize> {
         let query = sqlx::query_as::<_, (i64,)>(
             "
@@ -73,140 +56,78 @@ impl Database {
             self.save_cve(&cve.id, &cve.raw_json).await?;
         }
 
-        self.clear_cache().await?;
-
         transaction.commit().await?;
 
+        Ok(())
+    }
+
+    async fn save_cve(&self, id: &str, json: &str) -> Result<()> {
+        let query = sqlx::query!(
+            "
+            INSERT INTO cve (id, raw_json) VALUES (?, ?)
+            ON CONFLICT(id) DO UPDATE SET raw_json=excluded.raw_json
+            ",
+            id,
+            json
+        );
+
+        query.execute(&self.pool).await?;
+
+        let cve: CveVulnerability = serde_json::from_str(json)?;
+        let package_ids = cve.package_ids();
+        for package_id in package_ids {
+            self.record_package_vulnerability(&package_id, id).await?;
+        }
         Ok(())
     }
 
     pub(crate) async fn search(&self, package: &str) -> Result<Vec<Vulnerability>> {
-        if self.in_cache(package).await? {
-            self.get_from_cache(package).await
-        } else {
-            println!("Starting full search for {package} ...");
-            let vulnerabilities = self.full_search(package).await?;
-            self.save_cache(package, &vulnerabilities).await?;
-            println!("Results for {package} stored in cache");
-            Ok(vulnerabilities)
-        }
-    }
-
-    async fn full_search(&self, package: &str) -> Result<Vec<Vulnerability>> {
         let mut vulnerabilities = vec![];
-
-        let query = sqlx::query!(
-            "
-            SELECT COUNT(id) AS count FROM cve
-            "
-        );
-        let row = query.fetch_one(&self.pool).await?;
-        let total = row.count;
-        let mut index = 0;
-        let mut current_percentage;
-        let mut last_percentage = 0;
-        let query = sqlx::query!(
-            "
-            SELECT id, raw_json FROM cve
-            "
-        );
-        let mut rows = query.fetch(&self.pool);
-
-        while let Some(row) = rows.try_next().await? {
-            index += 1;
-            current_percentage = (index * 100) / total;
-            if current_percentage != last_percentage {
-                print!("{current_percentage:02} %\r");
-                let _ = std::io::stdout().flush();
-                last_percentage = current_percentage;
-            }
-            let cve: CveVulnerability = serde_json::from_str(&row.raw_json)?;
-            if cve.matches(package) {
-                let vulnerability = cve.to_domain()?;
-                vulnerabilities.push(vulnerability);
-            }
-        }
-
-        Ok(vulnerabilities)
-    }
-
-    async fn in_cache(&self, package: &str) -> Result<bool> {
-        let row = sqlx::query(
-            "
-            SELECT name FROM package WHERE name = ?
-            ",
-        )
-        .bind(package)
-        .fetch_optional(&self.pool)
-        .await?;
-
-        Ok(row.is_some())
-    }
-
-    async fn save_cache(&self, package: &str, vulnerabilities: &[Vulnerability]) -> Result<()> {
-        let ids: Vec<_> = vulnerabilities.iter().map(|v| v.id.clone()).collect();
-        let transaction = self.pool.begin().await?;
-
-        let query = sqlx::query!(
-            "
-            INSERT INTO package(name) VALUES (?)
-            ",
-            package
-        );
-        query.execute(&self.pool).await?;
-
-        for id in ids {
-            let query = sqlx::query!(
-                "
-                INSERT INTO vulnerability(cve, package) VALUES (?, ?)
-                ",
-                id,
-                package,
-            );
-
-            query.execute(&self.pool).await?;
-        }
-
-        transaction.commit().await?;
-        Ok(())
-    }
-
-    async fn clear_cache(&self) -> Result<()> {
-        let transaction = self.pool.begin().await?;
-
-        let query = sqlx::query!(
-            "
-            DELETE FROM vulnerability;
-            DELETE FROM package;
-            "
-        );
-        query.execute(&self.pool).await?;
-        transaction.commit().await?;
-        Ok(())
-    }
-
-    async fn get_from_cache(&self, package: &str) -> Result<Vec<Vulnerability>> {
-        let mut vulnerabilities = vec![];
+        let pattern = format!("%:{package}");
+        dbg!(&pattern);
         let rows = sqlx::query(
             "
-        SELECT raw_json, cve, package 
-        FROM vulnerability 
-        JOIN cve on cve.id = cve 
-        WHERE package = ?
+            SELECT raw_json, cve, package 
+            FROM vulnerability 
+            JOIN cve on cve.id = cve 
+            WHERE package like ?
             ",
         )
-        .bind(package)
+        .bind(pattern)
         .fetch_all(&self.pool)
         .await?;
-
         for row in rows {
             let raw_json = row.get("raw_json");
             let cve: CveVulnerability = serde_json::from_str(raw_json)?;
             let vulnerability = cve.to_domain()?;
             vulnerabilities.push(vulnerability);
         }
-
         Ok(vulnerabilities)
+    }
+
+    async fn record_package_vulnerability(&self, package_id: &str, cve_id: &str) -> Result<()> {
+        let query = sqlx::query!(
+            "
+            INSERT INTO package(id) VALUES (?) ON CONFLICT DO NOTHING
+            ",
+            package_id
+        );
+        query.execute(&self.pool).await?;
+
+        let query = sqlx::query!(
+            "
+            INSERT INTO vulnerability(cve, package) VALUES (?, ?)
+            ",
+            cve_id,
+            package_id,
+        );
+
+        query
+            .execute(&self.pool)
+            .await
+            .context("when inserting vulnerability")?;
+
+        Ok(())
     }
 
     pub(crate) async fn save_last_mod_date(&self) -> Result<()> {

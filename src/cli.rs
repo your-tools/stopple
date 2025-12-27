@@ -220,7 +220,7 @@ async fn refresh_database(path: PathBuf) -> Result<()> {
     save_cves(&database, paginated_cves.data()).await?;
 
     let mut start_index = 0;
-    while start_index < paginated_cves.total_results() {
+    while start_index <= paginated_cves.total_results() {
         start_index += paginated_cves.results_per_page();
         let paginated_cves = client.get_cves(last_mode_date, Some(start_index)).await?;
         save_cves(&database, paginated_cves.data()).await?;

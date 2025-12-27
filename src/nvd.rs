@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use anyhow::{Context, Result, anyhow, bail};
 use chrono::prelude::*;
 use reqwest::StatusCode;
@@ -65,17 +67,31 @@ impl CveVulnerability {
         Ok(None)
     }
 
-    pub(crate) fn matches(&self, package: &str) -> bool {
-        let package = package.to_lowercase();
+    pub(crate) fn package_ids(&self) -> Vec<String> {
+        let mut package_ids = HashSet::new();
         for configuration in &self.configurations {
             for node in &configuration.nodes {
                 for cpe_match in &node.cpe_match {
                     let criteria = cpe_match.criteria.to_lowercase();
-                    let substring = format!(":{package}:");
-                    if criteria.contains(&substring) {
-                        return true;
+                    let parts: Vec<_> = criteria.split(':').collect();
+                    if parts.len() < 5 {
+                        continue;
                     }
+                    let package_id = format!("{}:{}", parts[3], parts[4]);
+                    package_ids.insert(package_id);
                 }
+            }
+        }
+
+        package_ids.into_iter().collect()
+    }
+
+    pub(crate) fn matches(&self, package: &str) -> bool {
+        let package_ids = self.package_ids();
+        for package_id in &package_ids {
+            let substring = format!(":{package}");
+            if package_id.ends_with(&substring) {
+                return true;
             }
         }
 
@@ -364,7 +380,7 @@ impl NvdClient {
             .context("missing key: 'vulnerabilities'")?
         {
             let cve = vulnerability.get("cve").context("missing key: 'cve'")?;
-            let details = serde_json::to_string_pretty(cve)?;
+            let details = serde_json::to_string(cve)?;
             let id = cve
                 .get("id")
                 .context("missing key: 'id'")?
