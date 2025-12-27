@@ -84,7 +84,6 @@ impl Database {
     pub(crate) async fn search(&self, package: &str) -> Result<Vec<Vulnerability>> {
         let mut vulnerabilities = vec![];
         let pattern = format!("%:{package}");
-        dbg!(&pattern);
         let rows = sqlx::query(
             "
             SELECT raw_json, cve, package 
