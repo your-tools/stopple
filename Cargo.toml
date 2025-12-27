@@ -16,3 +16,4 @@ sqlx = { version = "0.8.6", features = ["migrate", "runtime-tokio", "sqlite"] }
 time = { version = "0.3", features = ["macros"] }
 tokio = { version = "1", features = ["full"] }
 versions = "7.0.0"
+futures-util = "0.3.31"

@@ -32,26 +32,13 @@ impl NvdVulnerability {
     }
 
     fn matches(&self, package: &str) -> bool {
-        let package = package.to_lowercase();
-        for configuration in &self.cve.configurations {
-            for node in &configuration.nodes {
-                for cpe_match in &node.cpe_match {
-                    let criteria = cpe_match.criteria.to_lowercase();
-                    let substring = format!(":{package}:");
-                    if criteria.contains(&substring) {
-                        return true;
-                    }
-                }
-            }
-        }
-
-        false
+        self.cve.matches(package)
     }
 }
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-struct CveVulnerability {
+pub(super) struct CveVulnerability {
     id: String,
     descriptions: Vec<CveDescription>,
     metrics: CveMetrics,
@@ -80,7 +67,24 @@ impl CveVulnerability {
         Ok(None)
     }
 
-    fn to_domain(&self) -> Result<Vulnerability> {
+    pub(crate) fn matches(&self, package: &str) -> bool {
+        let package = package.to_lowercase();
+        for configuration in &self.configurations {
+            for node in &configuration.nodes {
+                for cpe_match in &node.cpe_match {
+                    let criteria = cpe_match.criteria.to_lowercase();
+                    let substring = format!(":{package}:");
+                    if criteria.contains(&substring) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        false
+    }
+
+    pub(crate) fn to_domain(&self) -> Result<Vulnerability> {
         let id = self.id.to_string();
 
         let description = self.description()?;

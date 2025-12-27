@@ -62,6 +62,15 @@ enum DatabaseCommand {
     Create,
     #[clap(about = "refresh the database")]
     Refresh,
+    #[clap(about = "search the database for known vulnerabilities about a package")]
+    Search(SearchArgs),
+}
+
+#[derive(Parser)]
+struct SearchArgs {
+    package: String,
+    #[clap(long)]
+    long: bool,
 }
 
 pub async fn run() -> Result<()> {
@@ -190,6 +199,7 @@ async fn run_database(args: DatabaseArgs) -> Result<()> {
     match command {
         DatabaseCommand::Create => create_database(path).await,
         DatabaseCommand::Refresh => refresh_database(path).await,
+        DatabaseCommand::Search(args) => search_database(path, args).await,
     }
 }
 
@@ -231,5 +241,16 @@ async fn refresh_database(path: PathBuf) -> Result<()> {
 async fn save_cves(database: &Database, cves: &[Cve]) -> Result<()> {
     database.save_cves(cves).await?;
     println!("Stored {} new CVEs in the database", cves.len());
+    Ok(())
+}
+
+async fn search_database(path: PathBuf, args: SearchArgs) -> Result<()> {
+    let SearchArgs { package, long } = args;
+
+    let database = Database::open_from_path(&path).await?;
+
+    let vulnerabilities = database.search(&package).await?;
+
+    print_vulnerabilities(vulnerabilities, long);
     Ok(())
 }
