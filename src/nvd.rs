@@ -383,7 +383,9 @@ impl NvdClient {
     }
 
     async fn find_vulnerabilities(&mut self, package: &str) -> Result<Vec<NvdVulnerability>> {
-        let body = self.make_query(self.start_date, None, None).await?;
+        let body = self
+            .make_query(self.start_date, Some(package), None)
+            .await?;
 
         let response: NvdResponse =
             serde_json::from_str(&body).context("Could not parse response body")?;
