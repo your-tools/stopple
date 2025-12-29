@@ -22,6 +22,10 @@ class Repository(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def get_cve_by_id(self, id: str) -> Cve:
+        pass
+
+    @abstractmethod
     def cve_count(self) -> int:
         pass
 

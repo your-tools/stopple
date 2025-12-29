@@ -1,0 +1,31 @@
+{% if diagnostic.vulnerable %}
+    <p>
+        Your package is <strong>vulnerable</strong>. Suggested upgrade:
+    </p>
+    <p>
+        <pre>{{ diagnostic.upgrade.start }} -> {{ diagnostic.upgrade.end }}</pre>
+    </p>
+    <h4>Relevant CVEs</h4>
+    <div class="table-responsive small">
+        <table class="table table-striped table-sm">
+            <thead>
+                <tr>
+                    <th scope="col">CVE Id</th>
+                    <th scope="col">Severity</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cve in diagnostic.cves %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'cve_details' %}?id={{ cve.id }}">{{ cve.id }}</a>
+                        </td>
+                        <td>{{ cve.severity }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Your package has no known vulnerabilities - but that does not mean you're safe !</p>
+    {% endif %}
+</div>

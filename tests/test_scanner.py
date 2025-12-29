@@ -1,5 +1,5 @@
-from stopple.finder import Finder
-from stopple.vulnerabilities import Severity
+from stopple.scanner import Scanner
+from stopple.vulnerabilities import Range, Severity
 from tests.conftest import FakeRepository
 
 
@@ -28,8 +28,10 @@ def test_find_vulnerabilities() -> None:
         }
     )
 
-    finder = Finder(fake_repository)
+    scanner = Scanner(fake_repository)
 
-    found = finder.find_vulnerabilities("django", "5.2")
+    diagnostic = scanner.get_diagnostic("django", "5.2")
 
-    assert found == [v2]
+    assert diagnostic.vulnerable
+    assert diagnostic.cves == [cve2]
+    assert diagnostic.upgrade == Range("5.2", "5.3")

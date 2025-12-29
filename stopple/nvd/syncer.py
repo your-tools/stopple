@@ -21,6 +21,7 @@ class Syncer:
         response = self.api.get_cves(
             start_index=current_index, results_per_page=self.results_per_page
         )
+        total_results = response.total_results
         if not response.cves:
             return True
 
@@ -30,10 +31,10 @@ class Syncer:
         self.repository.save_sync_index(current_index)
 
         saved = self.repository.cve_count()
-        percent = saved * 100 // response.total_results
-        print(f"Done: {percent}%")
+        percent = saved * 100 // total_results
+        print(f"Done: {saved}/{total_results} {percent}%")
         if self.sleeping_time:
             print(f"Sleeping for {self.sleeping_time} seconds ...")
             sleep(self.sleeping_time)
 
-        return saved >= response.total_results
+        return saved >= total_results

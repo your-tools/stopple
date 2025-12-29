@@ -1,8 +1,4 @@
-patterns = [
-    "*.css",
-    "*.lock",
-    "tests/nvd/*.json",
-]
+patterns = ["*.css", "*.lock", "tests/nvd/*.json"]
 project = [
     "BACKEND",
     "CVE",
@@ -40,16 +36,8 @@ project = [
 ]
 
 [paths]
-"pyproject.toml" = [
-    "addopts",
-    "ipdb",
-    "ipython",
-    "pythonpath",
-]
-"stopple/finder.py" = [
-    "cmp",
-    "vercmp",
-]
+"pyproject.toml" = ["addopts", "ipdb", "ipython", "pythonpath"]
+"stopple/scanner.py" = ["cmp", "vercmp"]
 "stopple/nvd/client.py" = ["Cpe"]
 "stopple_app/repository.py" = ["iendswith"]
 "stopple_app/templates/stopple/base.html" = [
@@ -64,10 +52,7 @@ project = [
     "bs",
     "kx",
 ]
-"stopple_web/settings.py" = [
-    "DIRS",
-    "TZ",
-]
+"stopple_web/settings.py" = ["DIRS", "TZ"]
 "tests/nvd/cve_template.json" = ["ADDC"]
 
 [skipped]

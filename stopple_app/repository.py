@@ -64,6 +64,10 @@ class DjangoRepository(Repository):
         rows = CveTable.objects.all()[start:end]
         return [to_cve(row) for row in rows]
 
+    def get_cve_by_id(self, id: str) -> Cve:
+        row = CveTable.objects.get(id=id)
+        return to_cve(row)
+
     @transaction.atomic
     def save_vulnerabilities(self, to_save: dict[str, list[Vulnerability]]) -> None:
         for cve, vulnerabilities in to_save.items():

@@ -1,4 +1,6 @@
 from datetime import datetime
+
+import pytest
 from stopple.nvd.api import Cve
 from stopple.repository import Repository
 from stopple.vulnerabilities import Range, Severity, Vulnerability
@@ -7,7 +9,7 @@ from tests.nvd.conftest import make_cve
 
 class FakeRepository(Repository):
     def __init__(self) -> None:
-        self.cves: list[Cve] = []
+        self.cves: dict[str, Cve] = {}
         self.success_date: datetime | None = None
         self.sync_index: int | None = None
         self.vulnerabilities: list[Vulnerability] = []
@@ -22,13 +24,17 @@ class FakeRepository(Repository):
         self.sync_index = index
 
     def save_cves(self, cves: list[Cve]) -> None:
-        saved_ids = [cve.id for cve in self.cves]
         for cve in cves:
-            if cve.id not in saved_ids:
-                self.cves.append(cve)
+            self.cves[cve.id] = cve
 
     def get_cve_page(self, start: int, end: int) -> list[Cve]:
-        return self.cves[start:end]
+        return list(self.cves.values())[start:end]
+
+    def get_cve_by_id(self, id: str) -> Cve:
+        if id not in self.cves:
+            pytest.fail(f"No CVE with id  {id}")
+
+        return self.cves[id]
 
     def get_vulnerabilities(self, package: str) -> list[Vulnerability]:
         return [v for v in self.vulnerabilities if v.matches(package)]
@@ -69,12 +75,12 @@ class FakeRepository(Repository):
     def ensure_cve(
         self, cve_id: str, package_id: str, severity: Severity, start: str, end: str
     ) -> Cve:
-        matching_cves = [cve for cve in self.cves if cve.id == cve_id]
-        if matching_cves:
-            return matching_cves[0]
+        cve = self.cves.get(cve_id)
+        if cve:
+            return cve
 
         cve = make_cve(
             id=cve_id, package_id=package_id, severity=severity, start=start, end=end
         )
-        self.cves.append(cve)
+        self.cves[cve_id] = cve
         return cve

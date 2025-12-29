@@ -4,12 +4,14 @@
       <input name="package"
              class="form-control"
              placeholder="package name"
+             required
              value="{{ package | default:"" }}" />
     </div>
     <div class="p-2">
       <input name="package_version"
              class="form-control"
              placeholder="package version"
+             required
              value="{{ package_version|default:"" }}" />
     </div>
     <button class="btn btn-primary mb-2" type="submit">submit</button>

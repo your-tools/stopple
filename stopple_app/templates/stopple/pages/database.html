@@ -1,0 +1,21 @@
+{% extends "stopple/base.html" %}
+{% block main %}
+    <div class="flex-md-nowrap pt-3 pb-2 mb-3 border-bottom">
+        <h1>Stopple database</h1>
+        <p>
+            <ul>
+                <li>{{ cve_count }} CVEs stored</li>
+                <li>{{ vulnerabilities_count }} Vulnerabilities indexed</li>
+            </ul>
+        </p>
+        <h2>Lookup CVE</h2>
+        <form method="get" action="{% url "cve_details" %}">
+            <div class="d-flex flex-row">
+                <div class="p-2">
+                    <input name="id" class="form-control" placeholder="CVE-" required />
+                </div>
+                <button class="btn btn-primary mb-2" type="submit">submit</button>
+            </div>
+        </form>
+    </div>
+{% endblock main %}

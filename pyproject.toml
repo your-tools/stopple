@@ -22,7 +22,7 @@ dependencies = [
 django_settings_module = "stopple_web.settings"
 
 [tool.djlint]
-ignore = "H031"
+ignore = "H023, H031"
 
 [tool.poetry.group.dev.dependencies]
 django-stubs = "^5.2.8"
