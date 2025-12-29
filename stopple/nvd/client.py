@@ -85,7 +85,14 @@ class NvdClient(NvdApi):
                 cve_description = description["value"]
                 break
 
-        return Cve(id=id, description=cve_description, details=details)
+        severity_str = get_severity(details).lower()
+        severity = (
+            Severity(severity_str) if severity_str and severity_str != "none" else None
+        )
+
+        return Cve(
+            id=id, description=cve_description, details=details, severity=severity
+        )
 
 
 def parse(cve: Cve) -> list[Vulnerability]:
@@ -98,19 +105,12 @@ def parse(cve: Cve) -> list[Vulnerability]:
 def _parse(cve: Cve) -> list[Vulnerability]:
     id = cve.id
     description = cve.description
-    details = cve.details
-
-    severity_str = get_severity(details).lower()
-    severity = (
-        Severity(severity_str) if severity_str and severity_str != "none" else None
-    )
 
     return [
         Vulnerability(
             cve_id=id,
             package_id=cpe_match.package_id,
             description=description,
-            severity=severity,
             range=cpe_match.range,
         )
         for cpe_match in get_matches(cve.details)

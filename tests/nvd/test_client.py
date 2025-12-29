@@ -44,7 +44,6 @@ def test_parse_ok() -> None:
     assert actual == [
         Vulnerability(
             cve_id="CVE-001",
-            severity=Severity.High,
             description="test description",
             package_id="djangoproject:django",
             range=Range(start="5.0", end="5.1"),

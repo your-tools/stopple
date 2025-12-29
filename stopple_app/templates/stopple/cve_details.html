@@ -2,6 +2,7 @@
 {% block main %}
   <div class="flex-md-nowrap pt-3 pb-2 mb-3 border-bottom">
     <h1>CVE {{ cve.id }}</h1>
+    <p>Severity: {{ cve.severity }}</p>
     <p>{{ cve.description }}</p>
   </div>
   <h3>Affected packages</h3>

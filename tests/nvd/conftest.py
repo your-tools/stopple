@@ -33,7 +33,7 @@ def make_cve(
         json_template = json_template.replace(f"@{key}@", value)
 
     details = json.loads(json_template)
-    return Cve(id=id, details=details, description=description)
+    return Cve(id=id, details=details, description=description, severity=severity)
 
 
 class FakeNvdClient(NvdApi):

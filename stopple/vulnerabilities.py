@@ -21,7 +21,6 @@ class Vulnerability:
     package_id: str
     description: str
     range: Range | None = None
-    severity: Severity | None = None
 
     def matches(self, package: str) -> bool:
         return self.package_id.endswith(":" + package)

@@ -16,6 +16,7 @@ def vulnerabilities(request: HttpRequest) -> HttpResponse:
     vulnerabilities_count = Vulnerability.objects.count()
     package = request.GET.get("package")  # Coming from search form
     package_version = request.GET.get("package_version")
+    vulnerabilities = []
     if package:
         if package_version:
             finder = Finder(repository)

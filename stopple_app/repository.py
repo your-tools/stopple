@@ -11,7 +11,13 @@ from django.db import transaction
 
 
 def to_cve(row: CveTable) -> Cve:
-    return Cve(id=row.id, description=row.description, details=json.loads(row.raw_json))
+    severity = Severity(row.severity) if row.severity else None
+    return Cve(
+        id=row.id,
+        description=row.description,
+        details=json.loads(row.raw_json),
+        severity=severity,
+    )
 
 
 def to_vulnerability(row: VulnerabilityTable) -> Vulnerability:
@@ -23,7 +29,6 @@ def to_vulnerability(row: VulnerabilityTable) -> Vulnerability:
         cve_id=row.cve.id,
         description=row.cve.description,
         package_id=row.package_id,
-        severity=Severity(row.severity) if row.severity else None,
         range=range,
     )
 
@@ -45,7 +50,10 @@ class DjangoRepository(Repository):
         print(f":: Saving {len(cves)} cves ...")
         for cve in cves:
             CveTable.objects.update_or_create(
-                id=cve.id, description=cve.description, raw_json=json.dumps(cve.details)
+                id=cve.id,
+                description=cve.description,
+                raw_json=json.dumps(cve.details),
+                severity=cve.severity,
             )
         print(f":: Done: {len(cves)} saved")
 
@@ -69,7 +77,6 @@ class DjangoRepository(Repository):
                     package_id=vulnerability.package_id,
                     start=start,
                     end=end,
-                    severity=vulnerability.severity,
                 )
 
     def get_vulnerabilities(self, package: str) -> list[Vulnerability]:

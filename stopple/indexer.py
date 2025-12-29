@@ -24,3 +24,4 @@ class Indexer:
             self.repository.save_vulnerabilities(to_save)
             start += self.batch_size
             end = start + self.batch_size
+        print("Done - happy queries !")

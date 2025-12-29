@@ -62,7 +62,6 @@ class FakeRepository(Repository):
                 cve_id=cve_id,
                 package_id=package_id,
                 range=range,
-                severity=severity,
                 description="test vulnerability",
             ),
         )

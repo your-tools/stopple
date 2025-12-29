@@ -2,7 +2,7 @@ import pytest
 
 from stopple.vulnerabilities import Range, Severity, Vulnerability
 from stopple_app.repository import DjangoRepository
-
+from stopple_app.models import Cve as CveTable
 from tests.nvd.conftest import make_cve
 
 
@@ -31,6 +31,9 @@ def test_save_cves() -> None:
 
     assert repository.cve_count() == 3
 
+    saved = CveTable.objects.get(id="CVE-001")
+    assert saved.severity == "high"
+
 
 @pytest.mark.django_db
 def test_save_vulnerabilities() -> None:
@@ -50,7 +53,6 @@ def test_save_vulnerabilities() -> None:
         package_id="djangoproject:django",
         description="test description",
         range=Range("5.0", "5.1"),
-        severity=Severity.High,
     )
 
     repository = DjangoRepository()
