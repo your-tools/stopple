@@ -31,3 +31,4 @@ django-stubs = "^5.2.8"
 [tool.mypy]
 strict = true
 plugins = ["mypy_django_plugin.main"]
+packages = ["stopple_app", "stopple_web"]
