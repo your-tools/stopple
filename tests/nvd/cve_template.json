@@ -3,14 +3,14 @@
   "descriptions": [
     {
       "lang": "en",
-      "value": "test description"
+      "value": "@description@"
     }
   ],
   "metrics": {
     "cvssMetricV31": [
       {
         "cvssData": {
-          "baseSeverity": "MEDIUM"
+          "baseSeverity": "@severity@"
         }
       }
     ]

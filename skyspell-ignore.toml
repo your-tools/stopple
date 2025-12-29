@@ -1,7 +1,4 @@
-patterns = [
-    "*.css",
-    "*.lock",
-]
+patterns = ["*.css", "*.lock", "tests/nvd/*.json"]
 project = [
     "BACKEND",
     "CVE",
@@ -29,6 +26,7 @@ project = [
     "httpx",
     "nvd",
     "pydantic",
+    "sendmail",
     "staticfiles",
     "syncer",
     "urlpatterns",
@@ -36,11 +34,8 @@ project = [
 ]
 
 [paths]
-"pyproject.toml" = [
-    "ipdb",
-    "ipython",
-    "pythonpath",
-]
+"pyproject.toml" = ["ipdb", "ipython", "pythonpath"]
+"stopple/nvd/client.py" = ["Cpe"]
 "stopple_app/templates/stopple/base.html" = [
     "Buj",
     "Fv",
@@ -53,10 +48,7 @@ project = [
     "bs",
     "kx",
 ]
-"stopple_web/settings.py" = [
-    "DIRS",
-    "TZ",
-]
+"stopple_web/settings.py" = ["DIRS", "TZ"]
 "tests/nvd/cve_template.json" = ["ADDC"]
 
 [skipped]

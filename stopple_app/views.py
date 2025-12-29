@@ -9,9 +9,9 @@ def index(request: HttpRequest) -> HttpResponse:
 
 
 def vulnerabilities(request: HttpRequest) -> HttpResponse:
-    vulnerabilities_count = Cve.objects.count()
+    cve_count = Cve.objects.count()
     return render(
         request,
         "stopple/vulnerabilities.html",
-        {"vulnerabilities_count": vulnerabilities_count},
+        {"cve_count": cve_count},
     )

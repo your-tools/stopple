@@ -5,7 +5,7 @@ from unittest.mock import _Call
 
 import pytest
 
-from stopple.nvd.api import NvdApi, NvdCve, PaginatedResponse
+from stopple.nvd.api import NvdApi, Cve, PaginatedResponse
 from stopple.vulnerabilities import Severity
 
 
@@ -15,30 +15,34 @@ def make_cve(
     package_id: str,
     start: str,
     end: str,
-) -> NvdCve:
+    description: str | None = None,
+) -> Cve:
     json_template_path = Path("tests/nvd/cve_template.json")
-
     json_template = json_template_path.read_text()
-    details = json.loads(json_template)
 
-    for key, value in [
-        ("severity", severity),
-        ("package_id", package_id),
-        ("start", start),
-        ("end", end),
-    ]:
+    description = description or f"vulnerability #{id} for {package_id}"
+
+    context = {
+        "severity": severity,
+        "package_id": package_id,
+        "start": start,
+        "end": end,
+        "description": description,
+    }
+    for key, value in context.items():
         json_template = json_template.replace(f"@{key}@", value)
 
-    return NvdCve(id=id, details=details, description="test description")
+    details = json.loads(json_template)
+    return Cve(id=id, details=details, description=description)
 
 
 class FakeNvdClient(NvdApi):
     def __init__(self) -> None:
-        self.cves: list[NvdCve] = []
+        self.cves: list[Cve] = []
         self.results_per_page = 0
         self.calls: list[_Call] = []
 
-    def set_cves(self, cves: list[NvdCve]) -> None:
+    def set_cves(self, cves: list[Cve]) -> None:
         self.cves = cves
 
     def set_results_per_page(self, count: int) -> None:

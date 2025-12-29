@@ -1,7 +1,9 @@
-from typing import Any, TypedDict, cast
+from dataclasses import dataclass
+from typing import Any, Iterator, TypedDict, cast
 from httpx import Client
 
-from stopple.nvd.api import NvdApi, NvdCve, PaginatedResponse
+from stopple.nvd.api import NvdApi, Cve, PaginatedResponse
+from stopple.vulnerabilities import Range, Severity, Vulnerability
 
 NVD_BASE_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
 
@@ -20,17 +22,17 @@ class Description(TypedDict):
     value: str
 
 
-class Cve(TypedDict):
+class NvdCve(TypedDict):
     id: str
     descriptions: list[Description]
 
 
-class Vulnerability(TypedDict):
-    cve: Cve
+class NvdVulnerability(TypedDict):
+    cve: NvdCve
 
 
 class NvdResponse(TypedDict):
-    vulnerabilities: list[Vulnerability]
+    vulnerabilities: list[NvdVulnerability]
     resultsPerPage: int
     totalResults: int
 
@@ -73,7 +75,7 @@ class NvdClient(NvdApi):
             total_results=total_results, results_per_page=results_per_page, cves=cves
         )
 
-    def extract_cve(self, vulnerability: Vulnerability) -> NvdCve:
+    def extract_cve(self, vulnerability: NvdVulnerability) -> Cve:
         cve = vulnerability["cve"]
         details = cast(dict[str, Any], cve)
         id = cve["id"]
@@ -83,4 +85,75 @@ class NvdClient(NvdApi):
                 cve_description = description["value"]
                 break
 
-        return NvdCve(id=id, description=cve_description, details=details)
+        return Cve(id=id, description=cve_description, details=details)
+
+
+def parse(cve: Cve) -> list[Vulnerability]:
+    try:
+        return _parse(cve)
+    except Exception:
+        raise Exception(f"Could not parse cve {cve.id}")
+
+
+def _parse(cve: Cve) -> list[Vulnerability]:
+    id = cve.id
+    description = cve.description
+    details = cve.details
+
+    severity_str = get_severity(details).lower()
+    severity = Severity(severity_str) if severity_str else None
+
+    return [
+        Vulnerability(
+            cve_id=id,
+            package_id=cpe_match.package_id,
+            description=description,
+            severity=severity,
+            range=cpe_match.range,
+        )
+        for cpe_match in get_matches(cve.details)
+    ]
+
+
+def get_severity(details: dict[str, Any]) -> str:
+    metrics = details.get("metrics", {})
+    v2 = metrics.get("cvssMetricV2", [])
+    if v2:
+        for element in v2:
+            v2_severity: str = element.get("baseSeverity", "")
+            return v2_severity
+
+    keys = ["cvssMetricV30", "cvssMetricV31", "cvssMetricV40"]
+    for key in keys:
+        data = metrics.get(key, [])
+        for element in data:
+            cvss_data = element.get("cvssData")
+            if cvss_data:
+                severity: str = cvss_data.get("baseSeverity", "")
+                return severity
+
+    return ""
+
+
+@dataclass
+class CpeMatch:
+    package_id: str
+    range: Range | None = None
+
+
+def get_matches(details: dict[str, Any]) -> Iterator[CpeMatch]:
+    for configuration in details.get("configurations", []):
+        for node in configuration.get("nodes", []):
+            for cpe_match in node.get("cpeMatch"):
+                start = cpe_match.get("versionStartIncluding")
+                end = cpe_match.get("versionEndExcluding")
+                criteria: str = cpe_match.get("criteria")
+                parts = criteria.split(":")
+                vendor = parts[3]
+                package = parts[4]
+                package_id = f"{vendor}:{package}"
+                if start and end:
+                    range = Range(start, end)
+                else:
+                    range = None
+                yield CpeMatch(range=range, package_id=package_id)

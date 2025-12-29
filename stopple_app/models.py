@@ -7,5 +7,12 @@ class Cve(models.Model):
     description = models.TextField(null=False)
 
 
+class Vulnerability(models.Model):
+    package_id = models.TextField(null=False)
+    start = models.TextField(null=True)
+    end = models.TextField(null=True)
+    cve = models.ForeignKey(Cve, on_delete=models.CASCADE)
+
+
 class Syncer(models.Model):
     sync_index = models.IntegerField()

@@ -19,8 +19,9 @@ class Range:
 class Vulnerability:
     cve_id: str
     package_id: str
-    severity: Severity
-    ranges: list[Range]
+    description: str
+    range: Range | None = None
+    severity: Severity | None = None
 
     def matches(self, package: str) -> bool:
         return self.package_id.endswith(":" + package)

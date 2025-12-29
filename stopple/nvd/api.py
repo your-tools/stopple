@@ -4,17 +4,20 @@ from typing import Any
 
 
 @dataclass
-class NvdCve:
+class Cve:
     id: str
     description: str
     details: dict[str, Any]
+
+    def __repr__(self) -> str:
+        return f"NvdCve(id={self.id}, description={self.description})"
 
 
 @dataclass
 class PaginatedResponse:
     results_per_page: int
     total_results: int
-    cves: list[NvdCve]
+    cves: list[Cve]
 
 
 class NvdApi(metaclass=ABCMeta):
