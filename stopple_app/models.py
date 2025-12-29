@@ -11,6 +11,7 @@ class Vulnerability(models.Model):
     package_id = models.TextField(null=False)
     start = models.TextField(null=True)
     end = models.TextField(null=True)
+    severity = models.CharField(max_length=20, null=True)
     cve = models.ForeignKey(Cve, on_delete=models.CASCADE)
 
 

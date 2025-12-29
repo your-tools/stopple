@@ -1,7 +1,7 @@
 import json
 from stopple.nvd.api import Cve
 from stopple.repository import Repository
-from stopple.vulnerabilities import Vulnerability
+from stopple.vulnerabilities import Range, Severity, Vulnerability
 from stopple_app.models import (
     Vulnerability as VulnerabilityTable,
     Syncer,
@@ -12,6 +12,20 @@ from django.db import transaction
 
 def to_cve(row: CveTable) -> Cve:
     return Cve(id=row.id, description=row.description, details=json.loads(row.raw_json))
+
+
+def to_vulnerability(row: VulnerabilityTable) -> Vulnerability:
+    if row.start and row.end:
+        range = Range(row.start, row.end)
+    else:
+        range = None
+    return Vulnerability(
+        cve_id=row.cve.id,
+        description=row.cve.description,
+        package_id=row.package_id,
+        severity=Severity(row.severity) if row.severity else None,
+        range=range,
+    )
 
 
 class DjangoRepository(Repository):
@@ -55,7 +69,12 @@ class DjangoRepository(Repository):
                 package_id=vulnerability.package_id,
                 start=start,
                 end=end,
+                severity=vulnerability.severity,
             )
 
     def get_vulnerabilities(self, package: str) -> list[Vulnerability]:
-        return []
+        rows = VulnerabilityTable.objects.filter(package_id__contains=package)
+        return [to_vulnerability(row) for row in rows]
+
+    def delete_vulnerabilities(self) -> None:
+        VulnerabilityTable.objects.all().delete()

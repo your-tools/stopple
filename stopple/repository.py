@@ -30,3 +30,7 @@ class Repository(metaclass=ABCMeta):
         self, cve: Cve, vulnerabilities: list[Vulnerability]
     ) -> None:
         pass
+
+    @abstractmethod
+    def delete_vulnerabilities(self) -> None:
+        pass

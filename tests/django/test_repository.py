@@ -35,14 +35,22 @@ def test_save_cves() -> None:
 @pytest.mark.django_db
 def test_save_vulnerabilities() -> None:
 
-    django = make_cve("CVE-001", Severity.High, "djangoproject:django", "5.0", "5.1")
+    django = make_cve(
+        "CVE-001",
+        Severity.High,
+        "djangoproject:django",
+        "5.0",
+        "5.1",
+        description="test description",
+    )
     requests = make_cve("CVE-003", Severity.High, "requests:requests", "2.0", "2.3")
 
     v1 = Vulnerability(
-        cve_id="CVE-0001",
+        cve_id="CVE-001",
         package_id="djangoproject:django",
         description="test description",
         range=Range("5.0", "5.1"),
+        severity=Severity.High,
     )
 
     repository = DjangoRepository()
@@ -50,3 +58,7 @@ def test_save_vulnerabilities() -> None:
     repository.save_cves([django, requests])
 
     repository.save_vulnerabilities(django, [v1])
+
+    found = repository.get_vulnerabilities("django")
+
+    assert found == [v1]

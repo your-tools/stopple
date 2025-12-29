@@ -9,6 +9,7 @@ class Indexer:
 
     def index(self) -> None:
         print("Indexing ...")
+        self.repository.delete_vulnerabilities()
         total = self.repository.cve_count()
         start = 0
         end = self.batch_size

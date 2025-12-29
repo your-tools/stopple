@@ -39,3 +39,6 @@ class FakeRepository(Repository):
         for vulnerability in vulnerabilities:
             if vulnerability.cve_id not in saved_ids:
                 self.vulnerabilities.append(vulnerability)
+
+    def delete_vulnerabilities(self) -> None:
+        self.vulnerabilities = []
