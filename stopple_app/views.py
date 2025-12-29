@@ -24,7 +24,7 @@ def database(request: HttpRequest) -> HttpResponse:
     )
 
 
-def diagnostics(request: HttpRequest) -> HttpResponse:
+def diagnostic(request: HttpRequest) -> HttpResponse:
     repository = DjangoRepository()
 
     package = request.GET.get("package")
@@ -35,7 +35,7 @@ def diagnostics(request: HttpRequest) -> HttpResponse:
         diagnostic = scanner.get_diagnostic(package, package_version)
     return render(
         request,
-        "stopple/pages/diagnostics.html",
+        "stopple/pages/diagnostic.html",
         {
             "package": package,
             "package_version": package_version,

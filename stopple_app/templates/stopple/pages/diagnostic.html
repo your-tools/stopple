@@ -2,9 +2,9 @@
 {% block main %}
   <div class="flex-md-nowrap pt-3 pb-2 mb-3 border-bottom">
     <h1>Run diagnostic</h1>
-    {% include "stopple/pages/diagnostics/form.html" %}
+    {% include "stopple/pages/diagnostic/form.html" %}
     {% if diagnostic %}
-      {% include "stopple/pages/diagnostics/results.html" %}
+      {% include "stopple/pages/diagnostic/results.html" %}
     {% endif %}
   </div>
 {% endblock main %}
