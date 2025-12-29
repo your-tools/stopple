@@ -26,11 +26,13 @@ class Repository(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def save_vulnerabilities(
-        self, cve: Cve, vulnerabilities: list[Vulnerability]
-    ) -> None:
+    def save_vulnerabilities(self, to_save: dict[str, list[Vulnerability]]) -> None:
         pass
 
     @abstractmethod
     def delete_vulnerabilities(self) -> None:
+        pass
+
+    @abstractmethod
+    def get_vulnerabilities(self, package: str) -> list[Vulnerability]:
         pass

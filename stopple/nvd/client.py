@@ -101,7 +101,9 @@ def _parse(cve: Cve) -> list[Vulnerability]:
     details = cve.details
 
     severity_str = get_severity(details).lower()
-    severity = Severity(severity_str) if severity_str else None
+    severity = (
+        Severity(severity_str) if severity_str and severity_str != "none" else None
+    )
 
     return [
         Vulnerability(

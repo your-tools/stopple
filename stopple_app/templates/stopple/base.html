@@ -1,42 +1,32 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="auto">
-{% load static %}
+<html lang="en" data-bs-theme="auto" meta="">
+  {% load static %}
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta
-      name="description"
-      content="stopple - find and plug software vulnerabilities"
-    />
+    <meta name="description"
+          content="stopple - find and plug software vulnerabilities" />
     <title>Stopple</title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-      integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
-      crossorigin="anonymous"
-    />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+          crossorigin="anonymous" />
     <link href="{% static 'stopple/style.css' %}" rel="stylesheet" />
   </head>
   <body>
-    <header
-      class="navbar sticky-top bg-dark flex-md-nowrap p-0 shadow"
-      data-bs-theme="dark"
-    >
-      <a
-        class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6 text-white"
-        href="#"
-        >Stopple</a
-      >
+    <header class="navbar sticky-top bg-dark flex-md-nowrap p-0 shadow"
+            data-bs-theme="dark">
+      <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6 text-white"
+         href="#">Stopple</a>
     </header>
     <div class="container-fluid">
       <div class="row">
         {% include "stopple/menu.html" %}
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-
-            {% block main %}{% endblock %}
-          </div>
-        </main>
-      </div>
+          {% block main %}
+          {% endblock main %}
+        </div>
+      </main>
     </div>
   </body>
 </html>

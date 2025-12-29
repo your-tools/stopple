@@ -17,8 +17,10 @@ class Indexer:
             percent = start * 100 // total
             print(f"Done: {start}/{total} - {percent:02}%\r", flush=True, end="")
             page = self.repository.get_cve_page(start=start, end=end)
+            to_save = {}
             for cve in page:
                 vulnerabilities = parse(cve)
-                self.repository.save_vulnerabilities(cve, vulnerabilities)
+                to_save[cve.id] = vulnerabilities
+            self.repository.save_vulnerabilities(to_save)
             start += self.batch_size
             end = start + self.batch_size

@@ -56,24 +56,27 @@ class DjangoRepository(Repository):
         rows = CveTable.objects.all()[start:end]
         return [to_cve(row) for row in rows]
 
-    def save_vulnerabilities(
-        self, cve: Cve, vulnerabilities: list[Vulnerability]
-    ) -> None:
-        stored_cve = CveTable.objects.get(id=cve.id)
-        for vulnerability in vulnerabilities:
-            range = vulnerability.range
-            start = range.start if range else None
-            end = range.end if range else None
-            VulnerabilityTable.objects.create(
-                cve=stored_cve,
-                package_id=vulnerability.package_id,
-                start=start,
-                end=end,
-                severity=vulnerability.severity,
-            )
+    @transaction.atomic
+    def save_vulnerabilities(self, to_save: dict[str, list[Vulnerability]]) -> None:
+        for cve, vulnerabilities in to_save.items():
+            stored_cve = CveTable.objects.get(id=cve)
+            for vulnerability in vulnerabilities:
+                range = vulnerability.range
+                start = range.start if range else None
+                end = range.end if range else None
+                VulnerabilityTable.objects.create(
+                    cve=stored_cve,
+                    package_id=vulnerability.package_id,
+                    start=start,
+                    end=end,
+                    severity=vulnerability.severity,
+                )
 
     def get_vulnerabilities(self, package: str) -> list[Vulnerability]:
-        rows = VulnerabilityTable.objects.filter(package_id__contains=package)
+        pattern = f":{package}"
+        rows = VulnerabilityTable.objects.filter(
+            package_id__iendswith=pattern
+        ).order_by("-cve")
         return [to_vulnerability(row) for row in rows]
 
     def delete_vulnerabilities(self) -> None:

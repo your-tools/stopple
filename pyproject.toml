@@ -14,11 +14,15 @@ dependencies = [
     "django (>=6.0,<7.0)",
     "httpx (>=0.28.1,<0.29.0)",
     "python-dotenv (>=1.2.1,<2.0.0)",
+    "setuptools (<80)",
+    "rpm-vercmp (>=0.1.2,<0.2.0)",
 ]
 
 [tool.django-stubs]
 django_settings_module = "stopple_web.settings"
 
+[tool.djlint]
+ignore = "H031"
 
 [tool.poetry.group.dev.dependencies]
 django-stubs = "^5.2.8"
@@ -28,8 +32,10 @@ mypy = "^1.19.1"
 pytest = "^9.0.2"
 pytest-django = "^4.11.1"
 ruff = "^0.14.10"
+djlint = "^1.36.4"
 
 [tool.pytest]
+addopts = ["-vv", "--capture=no"]
 pythonpath = ["."]
 DJANGO_SETTINGS_MODULE = "tests.settings"
 
@@ -37,3 +43,7 @@ DJANGO_SETTINGS_MODULE = "tests.settings"
 strict = true
 plugins = ["mypy_django_plugin.main"]
 packages = ["stopple", "stopple_app", "stopple_web", "tests"]
+
+[[tool.mypy.overrides]]
+module = ["rpm_vercmp.*"]
+ignore_missing_imports = true

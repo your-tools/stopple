@@ -57,7 +57,7 @@ def test_save_vulnerabilities() -> None:
 
     repository.save_cves([django, requests])
 
-    repository.save_vulnerabilities(django, [v1])
+    repository.save_vulnerabilities({django.id: [v1]})
 
     found = repository.get_vulnerabilities("django")
 
