@@ -6,7 +6,7 @@ use chrono::prelude::*;
 use sqlx::migrate::Migrator;
 use sqlx::{Row, SqlitePool, sqlite::SqlitePoolOptions};
 
-use crate::nvd::CveVulnerability;
+use crate::nvd::response::CveVulnerability;
 use crate::vulnerabilities::{Vulnerability, VulnerabilityRepository};
 
 static MIGRATOR: Migrator = sqlx::migrate!();

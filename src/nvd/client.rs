@@ -4,7 +4,7 @@ use reqwest::StatusCode;
 
 use crate::{
     database::Cve,
-    nvd::{NvdResponse, NvdVulnerability},
+    nvd::response::{NvdResponse, NvdVulnerability},
     vulnerabilities::{Vulnerability, VulnerabilityRepository},
 };
 

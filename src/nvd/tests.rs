@@ -1,4 +1,4 @@
-use crate::{nvd::CveVulnerability, vulnerabilities::Severity};
+use crate::{nvd::response::CveVulnerability, vulnerabilities::Severity};
 
 #[test]
 fn test_parse_cve() {
