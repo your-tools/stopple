@@ -1,9 +1,9 @@
 from django.http import HttpRequest, HttpResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 
 
 def index(request: HttpRequest) -> HttpResponse:
-    return render(request, "stopple/index.html")
+    return redirect(vulnerabilities)
 
 
 def vulnerabilities(request: HttpRequest) -> HttpResponse:
