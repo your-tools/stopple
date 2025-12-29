@@ -4,3 +4,7 @@ from django.shortcuts import render
 
 def index(request: HttpRequest) -> HttpResponse:
     return render(request, "stopple/index.html")
+
+
+def vulnerabilities(request: HttpRequest) -> HttpResponse:
+    return render(request, "stopple/vulnerabilities.html")
