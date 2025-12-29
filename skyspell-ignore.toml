@@ -4,9 +4,13 @@ patterns = [
 ]
 project = [
     "BACKEND",
+    "CVE",
     "Csrf",
     "Cve",
     "MIDDLEWARE",
+    "NVD",
+    "Nvd",
+    "Syncer",
     "URLCONF",
     "VALIDATORS",
     "Validator",
@@ -14,11 +18,19 @@ project = [
     "asgi",
     "clickjacking",
     "contenttypes",
+    "cpe",
     "csrf",
+    "cve",
+    "cves",
+    "cvss",
     "django",
+    "djangoproject",
     "dotenv",
+    "httpx",
+    "nvd",
     "pydantic",
     "staticfiles",
+    "syncer",
     "urlpatterns",
     "wsgi",
 ]
@@ -27,6 +39,7 @@ project = [
 "pyproject.toml" = [
     "ipdb",
     "ipython",
+    "pythonpath",
 ]
 "stopple_app/templates/stopple/base.html" = [
     "Buj",
@@ -44,6 +57,7 @@ project = [
     "DIRS",
     "TZ",
 ]
+"tests/nvd/cve_template.json" = ["ADDC"]
 
 [skipped]
 "stopple_app/templates/stopple/base.html" = []

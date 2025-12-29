@@ -1,0 +1,45 @@
+{
+  "id": "CVE-2025-27556",
+  "descriptions": [
+    {
+      "lang": "en",
+      "value": "test description"
+    }
+  ],
+  "metrics": {
+    "cvssMetricV31": [
+      {
+        "cvssData": {
+          "baseSeverity": "MEDIUM"
+        }
+      }
+    ]
+  },
+  "configurations": [
+    {
+      "operator": "AND",
+      "nodes": [
+        {
+          "operator": "OR",
+          "negate": false,
+          "cpeMatch": [
+            {
+              "vulnerable": true,
+              "criteria": "cpe:2.3:a:@package_id@:*:*:*:*:*:*:*:*",
+              "versionStartIncluding": "@start@",
+              "versionEndExcluding": "@end@",
+              "matchCriteriaId": "1478C8F6-ADDC-4614-AB87-F0313B9A2C77"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "references": [
+    {
+      "url": "https://example.com",
+      "source": "cve@mitre.org",
+      "tags": ["Vendor Advisory"]
+    }
+  ]
+}
