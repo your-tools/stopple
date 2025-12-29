@@ -10,7 +10,11 @@ description = "Find and fix security vulnerabilities"
 authors = [{ name = "Dimitri Merejkowsky", email = "dimitri@dmerej.info" }]
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = ["django (>=6.0,<7.0)", "pydantic (>=2.12.5,<3.0.0)"]
+dependencies = [
+    "django (>=6.0,<7.0)",
+    "pydantic (>=2.12.5,<3.0.0)",
+    "python-dotenv (>=1.2.1,<2.0.0)",
+]
 
 [tool.django-stubs]
 django_settings_module = "stopple_web.settings"

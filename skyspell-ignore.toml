@@ -1,0 +1,49 @@
+patterns = [
+    "*.css",
+    "*.lock",
+]
+project = [
+    "BACKEND",
+    "Csrf",
+    "Cve",
+    "MIDDLEWARE",
+    "URLCONF",
+    "VALIDATORS",
+    "Validator",
+    "WSGI",
+    "asgi",
+    "clickjacking",
+    "contenttypes",
+    "csrf",
+    "django",
+    "dotenv",
+    "pydantic",
+    "staticfiles",
+    "urlpatterns",
+    "wsgi",
+]
+
+[paths]
+"pyproject.toml" = [
+    "ipdb",
+    "ipython",
+]
+"stopple_app/templates/stopple/base.html" = [
+    "Buj",
+    "Fv",
+    "Il",
+    "JLB",
+    "Lze",
+    "Qnuqku",
+    "Zq",
+    "Zw",
+    "bs",
+    "kx",
+]
+"stopple_web/settings.py" = [
+    "DIRS",
+    "TZ",
+]
+
+[skipped]
+"stopple_app/templates/stopple/base.html" = []
