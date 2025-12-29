@@ -18,7 +18,7 @@ class Finder:
             cmp1 = vercmp(range.start, version)
             cmp2 = vercmp(range.end, version)
 
-            if cmp1 == -1 and cmp2 >= 0:
+            if cmp1 <= 0 and cmp2 > 0:
                 res.append(vulnerability)
 
         return res
