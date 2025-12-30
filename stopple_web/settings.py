@@ -10,6 +10,11 @@ SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
 DEBUG = os.environ.get("DJANGO_DEBUG", "") == "true"
 
 ALLOWED_HOSTS: list[str] = []
+if DEBUG:
+    ALLOWED_HOSTS = ["*"]
+else:
+    HOSTNAME = os.environ["STOPPLE_HOSTNAME"]
+    ALLOWED_HOSTS = ["127.0.0.1", HOSTNAME]
 
 
 INSTALLED_APPS = [
